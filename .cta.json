@@ -1,0 +1,22 @@
+{
+  "projectName": "escapades-nyc",
+  "mode": "file-router",
+  "typescript": true,
+  "tailwind": true,
+  "packageManager": "npm",
+  "addOnOptions": {
+    "prisma": {
+      "database": "postgres"
+    }
+  },
+  "git": true,
+  "version": 1,
+  "framework": "react-cra",
+  "chosenAddOns": [
+    "eslint",
+    "start",
+    "prisma",
+    "shadcn",
+    "tanstack-query"
+  ]
+}
