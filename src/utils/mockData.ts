@@ -32,10 +32,13 @@ export const mockPlans: Plan[] = [
 
 // Initialize localStorage with mock data on first load
 export const initializeMockData = () => {
+  console.log('Initializing mock data...')
   if (
     typeof window !== 'undefined' &&
     !localStorage.getItem('escapades_plans')
   ) {
+    console.log('Setting mock data...')
     localStorage.setItem('escapades_plans', JSON.stringify(mockPlans))
+    console.log('Storage: ', localStorage.getItem('escapades_plans'))
   }
 }
