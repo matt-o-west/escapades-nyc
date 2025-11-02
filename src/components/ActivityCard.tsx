@@ -4,6 +4,8 @@ import {
   draggable,
   dropTargetForElements,
 } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
+import type { CalculatedActivity } from '../utils/timeCalcs'
+import { formatTime, formatDuration } from '../utils/timeCalcs'
 
 interface ActivityCardProps {
   activity: Activity
@@ -75,8 +77,10 @@ export default function ActivityCard({
               {activity.type}
             </span>
             <span className="text-sm text-gray-500">
-              {activity.startTime}
-              {activity.endTime && ` - ${activity.endTime}`}
+              {formatTime(activity.startTime)} - {formatTime(activity.endTime)}
+            </span>
+            <span className="text-xs text-gray-400">
+              ({formatDuration(activity.duration)})
             </span>
           </div>
 

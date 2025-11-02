@@ -17,13 +17,8 @@ function Plan() {
   console.log('Loaded plan:', plan)
   return (
     <div>
-      <div>
-        <h1 className="text-2xl font-bold mb-4">{plan.title}</h1>
-        <p className="text-gray-600 mb-6">{plan.description}</p>
-
-        {/* Timeline Component */}
-        <Timeline plan={plan} />
-      </div>
+      {/* Timeline Component */}
+      <Timeline plan={plan} />
     </div>
   )
 }

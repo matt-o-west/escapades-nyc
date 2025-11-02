@@ -1,65 +1,48 @@
 import { Link, useNavigate } from '@tanstack/react-router'
 import type { Plan } from '@/types/index'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import CreateActivityModal from './CreateActivityModal'
 import { storage } from '@/utils/storage'
 import DeleteModal from './DeleteModal'
 import ActivityCard from './ActivityCard'
-import { monitorForElements } from '@atlaskit/pragmatic-drag-and-drop/element/adapter'
 import TimelineSidebar from './TimelineSidebar'
+import { usePlanActivities } from '@/hooks/usePlanActivities'
+import { useDragAndDrop } from '@/hooks/useDragAndDrop'
+import { calculateActivityTimes } from '@/utils/timeCalcs'
+import { formatTime } from '@/utils/timeCalcs'
 
 export default function PlanTimeline({ plan }: { plan: Plan }) {
   const navigate = useNavigate()
   const [isAddActivityOpen, setIsAddActivityOpen] = useState(false)
   const [isDeletePlanOpen, setIsDeletePlanOpen] = useState(false)
-  const [activities, setActivities] = useState(plan.activities)
 
-  // Monitor for drag and drop events
-  useEffect(() => {
-    return monitorForElements({
-      onDrop({ source, location }) {
-        const destination = location.current.dropTargets[0]
-        if (!destination) {
-          // Dropped outside any drop target
-          return
-        }
+  // Custom hook for managing activity state and save/cancel
+  const {
+    currentActivities,
+    hasUnsavedChanges,
+    setCurrentActivities,
+    handleSave,
+    handleCancel,
+    refreshActivities,
+    deleteActivity,
+  } = usePlanActivities({
+    planId: plan.id,
+    initialActivities: plan.activities,
+  })
 
-        const sourceIndex = source.data.index
-        const destinationIndex = destination.data.index
+  // Custom hook for drag and drop
+  useDragAndDrop({
+    activities: currentActivities,
+    onReorder: setCurrentActivities,
+  })
 
-        // Type guards
-        if (
-          typeof sourceIndex !== 'number' ||
-          typeof destinationIndex !== 'number'
-        ) {
-          return
-        }
+  // Calculate times for display
+  const calculatedActivities = calculateActivityTimes(
+    currentActivities,
+    plan.startTime,
+  )
 
-        // Don't do anything if dropped in same position
-        if (sourceIndex === destinationIndex) {
-          return
-        }
-
-        // Reorder the activities
-        const reorderedActivities = Array.from(activities)
-        const [movedActivity] = reorderedActivities.splice(sourceIndex, 1)
-        reorderedActivities.splice(destinationIndex, 0, movedActivity)
-
-        // Update state
-        setActivities(reorderedActivities)
-
-        // Save to storage
-        storage.updatePlan(plan.id, { activities: reorderedActivities })
-      },
-    })
-  }, [activities, plan.id])
-
-  const refreshActivities = () => {
-    const updatedPlan = storage.getPlan(plan.id)
-    if (updatedPlan) {
-      setActivities(updatedPlan.activities)
-    }
-  }
+  console.log('calculatedActivities:', calculatedActivities, plan.startTime)
 
   const handleDeletePlan = () => {
     storage.deletePlan(plan.id)
@@ -99,16 +82,63 @@ export default function PlanTimeline({ plan }: { plan: Plan }) {
         </button>
       </div>
 
-      {/* Plan Details Card */}
+      {/* Plan Details */}
       <div className="bg-white p-6 rounded-lg shadow">
         <p className="text-gray-600 mb-4">{plan.description}</p>
-        <p className="text-sm text-gray-500">
-          {new Date(plan.date).toLocaleDateString('en-US', {
-            weekday: 'long',
-            month: 'long',
-            day: 'numeric',
-            year: 'numeric',
-          })}
+        <div className="flex items-center gap-4 text-sm text-gray-500">
+          <span>
+            📅{' '}
+            {new Date(plan.date).toLocaleDateString('en-US', {
+              weekday: 'long',
+              month: 'long',
+              day: 'numeric',
+              year: 'numeric',
+            })}
+          </span>
+          <span>•</span>
+          <span>🕐 Starts at {formatTime(plan.startTime)}</span>
+        </div>
+      </div>
+
+      {/* Unsaved Changes Banner */}
+      {hasUnsavedChanges && (
+        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-lg">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="text-yellow-600">⚠️</div>
+              <div>
+                <p className="font-medium text-yellow-800">Unsaved Changes</p>
+                <p className="text-sm text-yellow-700">
+                  You've reordered activities. Save to update the timeline, or
+                  cancel to revert.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={handleCancel}
+                className="px-4 py-2 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSave}
+                className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Save Order
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Instructions */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <p className="text-sm text-blue-800">
+          💡 <strong>How it works:</strong> Drag activities to try different
+          orders. The timeline updates in real-time to show you the schedule.
+          Click <strong>Save Order</strong> when you're happy with the
+          arrangement.
         </p>
       </div>
 
@@ -119,33 +149,28 @@ export default function PlanTimeline({ plan }: { plan: Plan }) {
       >
         + Add Activity
       </button>
-      <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
-        {/* Timeline Sidebar (Desktop Only) */}
-        <TimelineSidebar activities={activities} />
-        {/* Activities Timeline */}
+
+      {/* Main Content: Timeline + Activities */}
+      <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-6">
+        {/* Timeline Sidebar */}
+        <TimelineSidebar activities={calculatedActivities} />
+
+        {/* Activity Cards */}
         <div className="space-y-4">
-          {activities.length === 0 ? (
+          {currentActivities.length === 0 ? (
             <div className="text-center py-12 bg-white rounded-lg shadow">
-              <p className="text-gray-500 text-lg">
+              <p className="text-gray-500 text-lg mb-2">
                 No activities yet. Click '+ Add Activity' to start building your
                 itinerary.
               </p>
             </div>
           ) : (
-            activities.map((activity, index) => (
+            calculatedActivities.map((activity, index) => (
               <ActivityCard
                 key={activity.id}
                 activity={activity}
                 index={index}
-                onDelete={(activityId) => {
-                  const updatedActivities = activities.filter(
-                    (act) => act.id !== activityId,
-                  )
-                  storage.updatePlan(plan.id, {
-                    activities: updatedActivities,
-                  })
-                  setActivities(updatedActivities)
-                }}
+                onDelete={deleteActivity}
               />
             ))
           )}

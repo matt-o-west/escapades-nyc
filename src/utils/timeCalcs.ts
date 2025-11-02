@@ -6,11 +6,14 @@ export interface CalculatedActivity extends Activity {
   endTime: string
 }
 
+// app/utils/timeCalculations.ts
+
 export const calculateActivityTimes = (
   activities: Activity[],
-  planStartTime: string,
+  planStartTime?: string, // Make optional
 ): CalculatedActivity[] => {
-  let currentTime = planStartTime
+  // Default to 9:00 AM if no start time provided
+  let currentTime = planStartTime || '09:00'
 
   return activities.map((activity) => {
     const startTime = currentTime
@@ -28,7 +31,20 @@ export const calculateActivityTimes = (
 
 // Helper to add minutes to a time string
 export const addMinutes = (time: string, minutes: number): string => {
+  // Guard against undefined/invalid time
+  if (!time || typeof time !== 'string' || !time.includes(':')) {
+    console.warn('Invalid time provided to addMinutes:', time)
+    return '09:00' // Default fallback
+  }
+
   const [hours, mins] = time.split(':').map(Number)
+
+  // Check for NaN
+  if (isNaN(hours) || isNaN(mins)) {
+    console.warn('Invalid time format:', time)
+    return '09:00'
+  }
+
   const totalMinutes = hours * 60 + mins + minutes
 
   const newHours = Math.floor(totalMinutes / 60) % 24

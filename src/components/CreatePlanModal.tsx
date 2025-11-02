@@ -37,7 +37,7 @@ export default function CreatePlanModal({
       id: crypto.randomUUID(),
       title: title.trim(),
       date,
-      startTime: '',
+      startTime: startTime,
       description: description.trim(),
       activities: [],
       createdAt: new Date().toISOString(),
