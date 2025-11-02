@@ -19,6 +19,7 @@ export default function CreatePlanModal({
   const [title, setTitle] = useState('')
   const [date, setDate] = useState('')
   const [description, setDescription] = useState('')
+  const [startTime, setStartTime] = useState('17:00')
   const [error, setError] = useState('')
 
   const handleSubmit = (e: FormEvent) => {
@@ -36,6 +37,7 @@ export default function CreatePlanModal({
       id: crypto.randomUUID(),
       title: title.trim(),
       date,
+      startTime: '',
       description: description.trim(),
       activities: [],
       createdAt: new Date().toISOString(),
@@ -120,6 +122,24 @@ export default function CreatePlanModal({
             onChange={(e) => setDate(e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
           />
+        </fieldset>
+
+        {/* Start Time Field */}
+        <fieldset className="space-y-2">
+          <label
+            htmlFor="start-time"
+            className="block text-sm font-medium text-gray-700"
+          >
+            Start Time
+          </label>
+          <input
+            id="start-time"
+            type="time"
+            value={startTime}
+            onChange={(e) => setStartTime(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+          />
+          <p className="text-xs text-gray-500">When does your plan start?</p>
         </fieldset>
 
         {/* Description Field */}

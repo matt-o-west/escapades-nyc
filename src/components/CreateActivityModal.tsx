@@ -13,7 +13,7 @@ interface AddActivityDialogProps {
 const ACTIVITY_TYPES: { value: ActivityType; label: string }[] = [
   { value: 'dining', label: 'Dining' },
   { value: 'event', label: 'Event' },
-  { value: 'bar', label: 'Bar/Nightlife' },
+  { value: 'bar', label: 'Bar/Club' },
   { value: 'activity', label: 'Activity' },
   { value: 'transit', label: 'Transit' },
 ]
@@ -25,10 +25,9 @@ export default function CreateActivityModal({
   onSuccess,
 }: AddActivityDialogProps) {
   const [name, setName] = useState('')
-  const [startTime, setStartTime] = useState('')
-  const [endTime, setEndTime] = useState('')
   const [location, setLocation] = useState('')
   const [type, setType] = useState<ActivityType>('dining')
+  const [duration, setDuration] = useState(60)
   const [description, setDescription] = useState('')
   const [error, setError] = useState('')
 
@@ -37,8 +36,8 @@ export default function CreateActivityModal({
     setError('')
 
     // Validation
-    if (!name.trim() || !startTime || !location.trim()) {
-      setError('Activity name, time, and location are required')
+    if (!name.trim() || !location.trim() || duration <= 0) {
+      setError('Activity name, location, and duration are required')
       return
     }
 
@@ -46,9 +45,8 @@ export default function CreateActivityModal({
     const newActivity: Activity = {
       id: crypto.randomUUID(),
       name: name.trim(),
-      startTime,
-      endTime: endTime || undefined,
       location: location.trim(),
+      duration, // Use the duration state
       type,
       description: description.trim() || undefined,
     }
@@ -57,8 +55,7 @@ export default function CreateActivityModal({
     const plan = storage.getPlan(planId)
     if (plan) {
       const updatedActivities = [...plan.activities, newActivity]
-      // Sort by start time
-      updatedActivities.sort((a, b) => a.startTime.localeCompare(b.startTime))
+      // No sorting - just append to end!
 
       storage.updatePlan(planId, {
         activities: updatedActivities,
@@ -75,8 +72,7 @@ export default function CreateActivityModal({
 
   const resetForm = () => {
     setName('')
-    setStartTime('')
-    setEndTime('')
+
     setLocation('')
     setType('dining')
     setDescription('')
@@ -125,39 +121,54 @@ export default function CreateActivityModal({
         </fieldset>
 
         {/* Time - Start and End */}
-        <div className="grid grid-cols-2 gap-4">
-          <fieldset className="space-y-2">
-            <label
-              htmlFor="start-time"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Start Time
-            </label>
-            <input
-              id="start-time"
-              type="time"
-              value={startTime}
-              onChange={(e) => setStartTime(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-            />
-          </fieldset>
-
-          <fieldset className="space-y-2">
-            <label
-              htmlFor="end-time"
-              className="block text-sm font-medium text-gray-700"
-            >
-              End Time (Optional)
-            </label>
-            <input
-              id="end-time"
-              type="time"
-              value={endTime}
-              onChange={(e) => setEndTime(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-            />
-          </fieldset>
-        </div>
+        <fieldset className="space-y-2">
+          <label
+            htmlFor="duration"
+            className="block text-sm font-medium text-gray-700"
+          >
+            Duration
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <input
+                id="duration-hours"
+                type="number"
+                min="0"
+                max="12"
+                value={Math.floor(duration / 60)}
+                onChange={(e) => {
+                  const hours = parseInt(e.target.value) || 0
+                  const minutes = duration % 60
+                  setDuration(hours * 60 + minutes)
+                }}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                placeholder="Hours"
+              />
+              <p className="text-xs text-gray-500 mt-1">Hours</p>
+            </div>
+            <div>
+              <input
+                id="duration-minutes"
+                type="number"
+                min="0"
+                max="59"
+                step="15"
+                value={duration % 60}
+                onChange={(e) => {
+                  const hours = Math.floor(duration / 60)
+                  const minutes = parseInt(e.target.value) || 0
+                  setDuration(hours * 60 + minutes)
+                }}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                placeholder="Minutes"
+              />
+              <p className="text-xs text-gray-500 mt-1">Minutes</p>
+            </div>
+          </div>
+          <p className="text-xs text-gray-500">
+            How long will this activity take?
+          </p>
+        </fieldset>
 
         {/* Location */}
         <fieldset className="space-y-2">
